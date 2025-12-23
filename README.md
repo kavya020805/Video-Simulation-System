@@ -1,37 +1,70 @@
-# Video Streaming System 🎥
+# Video Simulation System (MyTube)
 
-A console-based **C++ Video Streaming System** that simulates the core features of modern video platforms. It allows users to **register/login, create channels, upload videos, manage playlists, like/comment on videos, and subscribe to channels**. The project demonstrates strong use of **Object-Oriented Programming (OOP)** principles and efficient data handling with **STL containers**.
+This project is a console-based video streaming simulation written in **C++**.  
 
----
-
-## 🚀 Features
-- User registration, login, and logout system  
-- Channel creation and management  
-- Video upload and browsing  
-- Playlists for organizing videos  
-- Like, comment, and interact with content  
-- Subscribe to channels and view subscriptions  
-- Console-based interactive menu  
+The system models the core pieces of a video platform—users, channels, videos, comments, and playlists—and shows how these parts interact in a structured and maintainable way.
 
 ---
 
-## 🛠️ Tech Stack
-- **Language:** C++  
-- **Paradigm:** Object-Oriented Programming (OOP)  
-- **Libraries Used:** Standard Template Library (STL)  
+## What the Project Does
+
+The application allows users to:
+- Register and log in
+- Create and manage channels
+- Upload and watch videos
+- Add comments and likes
+- Create playlists and play them
+- Search videos by title
+
+All functionality runs in-memory and is designed to be easy to reason about and extend.
 
 ---
 
-## ▶️ How to Run
-```bash
-# Clone the repository
-git clone https://github.com/your-username/video-streaming-system.git
+## How the System Is Designed
 
-# Navigate into the project
-cd video-streaming-system
+The project follows a clean object-oriented design where each class has a clear purpose:
 
-# Compile the project
-g++ src/*.cpp -o video_stream
+- **User** handles subscriptions, watch history, and playlists  
+- **Channel** owns videos and manages subscribers  
+- **Video** tracks playback, views, and comments  
+- **Comment** represents user feedback with likes and timestamps  
+- **Playlist** groups videos together using lightweight references  
 
-# Run the program
-./video_stream
+This separation keeps the code readable and avoids unnecessary coupling between components.
+
+---
+
+## Memory Ownership & Data Choices
+
+A major focus of this project is making ownership explicit and predictable:
+
+- Channels **own** their videos using unique ownership
+- Videos are referenced elsewhere using IDs instead of shared pointers
+- Frequently accessed data is stored in cache-friendly containers
+- Thread-safe ID generation is used to avoid collisions
+
+These decisions help keep the system simple, efficient, and easy to reason about.
+
+---
+
+## Error Handling & Reliability
+
+Operations return clear results that describe:
+- Whether an action succeeded or failed
+- Why it failed, if applicable
+- Any relevant identifiers
+
+This makes control flow easier to follow and improves overall robustness.
+
+---
+
+## Performance Awareness
+
+While the project is a simulation, it includes lightweight timing and measurement utilities to help understand how different operations behave.  
+This encourages thinking about performance early, even in small systems.
+
+---
+
+## Author
+
+**Kavya Chauhan**
