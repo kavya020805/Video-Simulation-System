@@ -8,9 +8,58 @@
 #include <chrono>
 #include <atomic>
 #include <limits>
+#include <mutex>
+#include <iomanip>
 
 using namespace std;
 
+// We use this enum to handle errors consistently instead of just printing messages everywhere
+enum class OpStatus {
+    SUCCESS,
+    NOT_FOUND,
+    ALREADY_EXISTS,
+    PERMISSION_DENIED,
+    INVALID_INPUT,
+    NOT_LOGGED_IN
+};
+
+// This wraps operation results so we can return both status and useful info
+struct OpResult {
+    OpStatus status;
+    string message;
+    long long id = -1;
+    
+    OpResult(OpStatus s, const string& m = "", long long i = -1) 
+        : status(s), message(m), id(i) {}
+    
+    bool isSuccess() const { return status == OpStatus::SUCCESS; }
+};
+
+// Simple timer to measure how long operations take
+class PerfTimer {
+private:
+    chrono::high_resolution_clock::time_point start;
+    string operation;
+    bool enabled;
+public:
+    PerfTimer(const string& op, bool enable = true) 
+        : operation(op), enabled(enable) {
+        if (enabled) start = chrono::high_resolution_clock::now();
+    }
+    
+    ~PerfTimer() {
+        if (enabled) {
+            auto end = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
+            cout << "[PERF] " << operation << ": " << duration << " μs\n";
+        }
+    }
+};
+
+// Toggle this to see performance measurements
+static bool PERF_LOGGING = false;
+
+// Thread-safe ID generator using atomic operations
 class IdGen {
 private:
     static atomic<long long> counter;
@@ -19,6 +68,26 @@ public:
 };
 atomic<long long> IdGen::counter{0LL};
 
+// Centralized logging to keep output consistent
+class Logger {
+public:
+    enum Level { INFO, WARNING, ERROR, PERF };
+    
+    static void log(Level level, const string& msg) {
+        switch(level) {
+            case INFO: cout << "[INFO] " << msg << "\n"; break;
+            case WARNING: cout << "[WARN] " << msg << "\n"; break;
+            case ERROR: cout << "[ERROR] " << msg << "\n"; break;
+            case PERF: cout << "[PERF] " << msg << "\n"; break;
+        }
+    }
+    
+    static void info(const string& msg) { log(INFO, msg); }
+    static void warn(const string& msg) { log(WARNING, msg); }
+    static void error(const string& msg) { log(ERROR, msg); }
+};
+
+// Represents a comment on a video with likes and timestamp
 class Comment {
 private:
     long long id;
@@ -35,12 +104,13 @@ public:
     }
 
     long long getId() const { return id; }
-    string getAuthor() const { return author; }
-    string getText() const { return text; }
+    const string& getAuthor() const { return author; }
+    const string& getText() const { return text; }
     int getLikes() const { return likes; }
     void like() { likes++; }
 };
 
+// Video class handles playback, views, and comments
 class Video {
 private:
     long long id;
@@ -49,7 +119,7 @@ private:
     int durationSec;
     long long views;
     bool playing;
-    vector<Comment> comments;
+    vector<Comment> comments;  // Using vector for cache-friendly contiguous memory
 
 public:
     Video() = default;
@@ -57,60 +127,66 @@ public:
         : id(IdGen::next()), title(t), uploader(u), durationSec(d), views(0), playing(false) {}
 
     long long getId() const { return id; }
-    string getTitle() const { return title; }
-    string getUploader() const { return uploader; }
-    int getViews() const { return views; }
+    const string& getTitle() const { return title; }
+    const string& getUploader() const { return uploader; }
+    long long getViews() const { return views; }
 
-    void play() {
+    OpResult play() {
+        PerfTimer timer("Video::play", PERF_LOGGING);
+        
         if (!playing) {
             playing = true;
             ++views;
-            cout << "Playing \"" << title << "\" (views: " << views << ")\n";
-        } else {
-            cout << "Already playing \"" << title << "\"\n";
+            return OpResult(OpStatus::SUCCESS, 
+                "Playing \"" + title + "\" (views: " + to_string(views) + ")");
         }
+        return OpResult(OpStatus::ALREADY_EXISTS, 
+            "Already playing \"" + title + "\"");
     }
 
-    void pause() {
+    OpResult pause() {
         if (playing) {
             playing = false;
-            cout << "Paused \"" << title << "\"\n";
-        } else {
-            cout << "Not playing \"" << title << "\"\n";
+            return OpResult(OpStatus::SUCCESS, "Paused \"" + title + "\"");
         }
+        return OpResult(OpStatus::INVALID_INPUT, "Not playing \"" + title + "\"");
     }
 
-    void addComment(const string& user, const string& text) {
+    OpResult addComment(const string& user, const string& text) {
+        PerfTimer timer("Video::addComment", PERF_LOGGING);
+        
         comments.emplace_back(user, text);
-        cout << "Comment added (id=" << comments.back().getId() << ") by " << user << "\n";
+        long long cid = comments.back().getId();
+        return OpResult(OpStatus::SUCCESS, 
+            "Comment added by " + user, cid);
     }
 
-    bool likeComment(long long cid) {
+    OpResult likeComment(long long cid) {
+        PerfTimer timer("Video::likeComment", PERF_LOGGING);
+        
+        // We do a linear search here, could use a hash map if comment counts get huge
         for (auto &c : comments) {
             if (c.getId() == cid) {
                 c.like();
-                cout << "Liked comment " << cid << " (likes=" << c.getLikes() << ")\n";
-                return true;
+                return OpResult(OpStatus::SUCCESS, 
+                    "Liked comment " + to_string(cid) + " (likes=" + to_string(c.getLikes()) + ")");
             }
         }
-        return false;
+        return OpResult(OpStatus::NOT_FOUND, "Comment not found");
     }
 
-    bool removeComment(long long cid, const string& requester, const string& channelOwner) {
+    OpResult removeComment(long long cid, const string& requester, const string& channelOwner) {
         for (auto it = comments.begin(); it != comments.end(); ++it) {
             if (it->getId() == cid) {
+                // Only the comment author or channel owner can delete
                 if (requester == it->getAuthor() || requester == channelOwner) {
                     comments.erase(it);
-                    cout << "Comment " << cid << " removed\n";
-                    return true;
-                } else {
-                    cout << "Permission denied to remove comment " << cid << "\n";
-                    return false;
+                    return OpResult(OpStatus::SUCCESS, "Comment removed");
                 }
+                return OpResult(OpStatus::PERMISSION_DENIED, "Permission denied");
             }
         }
-        cout << "Comment id " << cid << " not found\n";
-        return false;
+        return OpResult(OpStatus::NOT_FOUND, "Comment not found");
     }
 
     void listComments() const {
@@ -120,48 +196,56 @@ public:
         }
         cout << "Comments for \"" << title << "\":\n";
         for (const auto &c : comments) {
-            cout << "  [" << c.getId() << "] " << c.getAuthor() << " (" << c.getLikes() << " likes): " << c.getText() << "\n";
+            cout << "  [" << c.getId() << "] " << c.getAuthor() 
+                 << " (" << c.getLikes() << " likes): " << c.getText() << "\n";
         }
     }
 };
 
+// Channel owns videos and manages subscribers
 class Channel {
 private:
     string name;
     string owner;
     string description;
-    vector<shared_ptr<Video>> uploads;
+    vector<unique_ptr<Video>> uploads;  // Using unique_ptr for automatic memory management
     unordered_set<string> subscribers;
 
 public:
     Channel() = default;
     Channel(const string& n, const string& o, const string& d = "")
         : name(n), owner(o), description(d) {}
+    
+    // Enable move semantics for efficiency
+    Channel(Channel&&) = default;
+    Channel& operator=(Channel&&) = default;
 
-    string getName() const { return name; }
-    string getOwner() const { return owner; }
+    const string& getName() const { return name; }
+    const string& getOwner() const { return owner; }
 
-    shared_ptr<Video> upload(const string& title, int dur) {
-        auto v = make_shared<Video>(title, name, dur);
-        uploads.push_back(v);
-        cout << "Uploaded \"" << title << "\" (id=" << v->getId() << ") to channel " << name << "\n";
-        return v;
+    Video* upload(const string& title, int dur) {
+        PerfTimer timer("Channel::upload", PERF_LOGGING);
+        
+        auto v = make_unique<Video>(title, name, dur);
+        Video* ptr = v.get();
+        uploads.push_back(move(v));
+        Logger::info("Uploaded \"" + title + "\" (id=" + to_string(ptr->getId()) + 
+                     ") to channel " + name);
+        return ptr;
     }
 
-    void subscribe(const string& user) {
+    OpResult subscribe(const string& user) {
         if (subscribers.insert(user).second) {
-            cout << user << " subscribed to " << name << "\n";
-        } else {
-            cout << user << " already subscribed\n";
+            return OpResult(OpStatus::SUCCESS, user + " subscribed to " + name);
         }
+        return OpResult(OpStatus::ALREADY_EXISTS, user + " already subscribed");
     }
 
-    void unsubscribe(const string& user) {
+    OpResult unsubscribe(const string& user) {
         if (subscribers.erase(user)) {
-            cout << user << " unsubscribed from " << name << "\n";
-        } else {
-            cout << user << " was not subscribed\n";
+            return OpResult(OpStatus::SUCCESS, user + " unsubscribed from " + name);
         }
+        return OpResult(OpStatus::NOT_FOUND, user + " was not subscribed");
     }
 
     void listUploads() const {
@@ -170,116 +254,100 @@ public:
             return;
         }
         cout << "Uploads for channel " << name << ":\n";
-        for (auto &v : uploads) {
-            cout << "  [" << v->getId() << "] " << v->getTitle() << " (views: " << v->getViews() << ")\n";
+        for (const auto &v : uploads) {
+            cout << "  [" << v->getId() << "] " << v->getTitle() 
+                 << " (views: " << v->getViews() << ")\n";
         }
     }
 };
 
+// Playlist stores video IDs instead of pointers to avoid ownership issues
 class Playlist {
 private:
     string name;
-    vector<shared_ptr<Video>> vids;
+    vector<long long> videoIds;
 
 public:
     Playlist() = default;
     Playlist(const string& n): name(n) {}
 
-    void add(const shared_ptr<Video>& v) {
-        vids.push_back(v);
-        cout << "Added \"" << v->getTitle() << "\" to playlist \"" << name << "\"\n";
+    void add(long long videoId, const string& videoTitle) {
+        videoIds.push_back(videoId);
+        Logger::info("Added \"" + videoTitle + "\" to playlist \"" + name + "\"");
     }
 
-    void playAll() {
-        cout << "Playing playlist \"" << name << "\"\n";
-        for (auto &v : vids) {
-            if (v->getViews() > 0) v->pause(); // Simplified playing state check
-            v->play();
-            v->pause();
-        }
-    }
-
-    void show() const {
+    const vector<long long>& getVideoIds() const { return videoIds; }
+    const string& getName() const { return name; }
+    
+    void show(const unordered_map<long long, Video*>& videoMap) const {
         cout << "Playlist: " << name << "\n";
-        if (vids.empty()) {
+        if (videoIds.empty()) {
             cout << "  (empty)\n";
             return;
         }
-        for (size_t i = 0; i < vids.size(); ++i) {
-            cout << "  [" << (i+1) << "] " << vids[i]->getTitle() << " (id=" << vids[i]->getId() << ")\n";
+        for (size_t i = 0; i < videoIds.size(); ++i) {
+            auto it = videoMap.find(videoIds[i]);
+            if (it != videoMap.end()) {
+                cout << "  [" << (i+1) << "] " << it->second->getTitle() 
+                     << " (id=" << it->second->getId() << ")\n";
+            }
         }
     }
 };
 
+// User can watch videos, comment, and manage playlists
 class User {
 private:
     string username;
     unordered_set<string> subscriptions;
-    vector<shared_ptr<Video>> history;
+    vector<long long> historyIds;  // Track watch history by video ID
     unordered_map<string, Playlist> playlists;
-    unordered_set<string> ownedChannels;
 
 public:
     User() = default;
     User(const string& n): username(n) {}
 
-    string getUsername() const { return username; }
+    const string& getUsername() const { return username; }
 
-    void watch(const shared_ptr<Video>& v) {
-        if (!v) {
-            cout << "Video not found\n";
-            return;
-        }
-        history.push_back(v);
-        v->play();
+    OpResult watch(Video* v) {
+        if (!v) return OpResult(OpStatus::NOT_FOUND, "Video not found");
+        
+        historyIds.push_back(v->getId());
+        return v->play();
     }
 
-    void addComment(const shared_ptr<Video>& v, const string& text) {
-        if (!v) {
-            cout << "Video not found\n";
-            return;
-        }
-        v->addComment(username, text);
+    OpResult addComment(Video* v, const string& text) {
+        if (!v) return OpResult(OpStatus::NOT_FOUND, "Video not found");
+        return v->addComment(username, text);
     }
 
-    void likeComment(const shared_ptr<Video>& v, long long cid) {
-        if (!v) {
-            cout << "Video not found\n";
-            return;
-        }
-        if (!v->likeComment(cid)) {
-            cout << "Comment not found\n";
-        }
+    OpResult likeComment(Video* v, long long cid) {
+        if (!v) return OpResult(OpStatus::NOT_FOUND, "Video not found");
+        return v->likeComment(cid);
     }
 
-    void createPlaylist(const string& pname) {
+    OpResult createPlaylist(const string& pname) {
         if (playlists.find(pname) != playlists.end()) {
-            cout << "Playlist exists\n";
-            return;
+            return OpResult(OpStatus::ALREADY_EXISTS, "Playlist exists");
         }
         playlists.emplace(pname, Playlist(pname));
-        cout << "Created playlist \"" << pname << "\"\n";
+        return OpResult(OpStatus::SUCCESS, "Created playlist \"" + pname + "\"");
     }
 
     Playlist* getPlaylist(const string& pname) {
         auto it = playlists.find(pname);
-        if (it == playlists.end()) {
-            return nullptr;
-        }
-        return &(it->second);
+        return (it == playlists.end()) ? nullptr : &(it->second);
     }
 
-    void subscribeChannel(Channel& ch) {
+    OpResult subscribeChannel(Channel& ch) {
         if (subscriptions.insert(ch.getName()).second) {
-            ch.subscribe(username);
-        } else {
-            cout << "Already subscribed\n";
+            return ch.subscribe(username);
         }
+        return OpResult(OpStatus::ALREADY_EXISTS, "Already subscribed");
     }
 };
 
-// The rest of the code (readLine, readInt, main) remains unchanged...
-
+// Helper to read a line of input with a prompt
 static string readLine(const string& prompt) {
     cout << prompt << flush;
     string s;
@@ -287,6 +355,7 @@ static string readLine(const string& prompt) {
     return s;
 }
 
+// Helper to read an integer with validation
 static int readInt(const string& prompt) {
     while (true) {
         string s = readLine(prompt);
@@ -299,21 +368,36 @@ static int readInt(const string& prompt) {
     }
 }
 
+// Helper to read a long long with validation
+static long long readLongLong(const string& prompt) {
+    while (true) {
+        string s = readLine(prompt);
+        try {
+            if (s.empty()) return -1;
+            return stoll(s);
+        } catch (...) {
+            cout << "Invalid number, try again\n";
+        }
+    }
+}
+
 int main() {
+    // Speed up I/O operations
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
+    // Main data structures
     unordered_map<string, User> users;
     unordered_map<string, Channel> channels;
-    unordered_map<long long, shared_ptr<Video>> videos;
+    unordered_map<long long, Video*> videos;  // Videos are owned by channels
 
-    // Pre-create channels
+    // Create some default channels
     channels.emplace("KavyaTech", Channel("KavyaTech", "system", "C++ tutorials"));
     channels.emplace("IndieMusic", Channel("IndieMusic", "system", "Music channel"));
 
-    // Register system videos
+    // Add some initial videos
     {
-        auto v = channels["KavyaTech"].upload("C++ OOP Deep Dive", 900);
+        Video* v = channels["KavyaTech"].upload("C++ OOP Deep Dive", 900);
         videos[v->getId()] = v;
         v = channels["KavyaTech"].upload("Data Structures Overview", 720);
         videos[v->getId()] = v;
@@ -321,10 +405,11 @@ int main() {
         videos[v->getId()] = v;
     }
 
-    User* current = nullptr;
+    User* current = nullptr;  // Currently logged in user
 
+    // Display the menu
     auto menu = [&]() {
-        cout << "\n--- MyTube (simple) ---\n";
+        cout << "\n--- MyTube (Improved) ---\n";
         cout << "0  Show menu\n";
         cout << "1  Register\n";
         cout << "2  Login\n";
@@ -342,11 +427,14 @@ int main() {
         cout << "14 Play playlist (logged in)\n";
         cout << "15 List all videos\n";
         cout << "16 List channel uploads\n";
+        cout << "17 Toggle performance logging\n";
+        cout << "18 Run performance benchmark\n";
         cout << "99 Exit\n";
     };
 
     menu();
 
+    // Main command loop
     while (true) {
         string cmdS = readLine("\nAction> ");
         if (cmdS.empty()) continue;
@@ -355,22 +443,30 @@ int main() {
 
         if (cmd == 0) {
             menu();
-        } else if (cmd == 1) {
+        } 
+        else if (cmd == 1) {
+            // Register a new user
             string uname = readLine("Choose username: ");
             if (uname.empty()) { cout << "Empty name\n"; continue; }
             if (users.find(uname) != users.end()) { cout << "User exists\n"; continue; }
             users.emplace(uname, User(uname));
             cout << "Registered user: " << uname << "\n";
-        } else if (cmd == 2) {
+        } 
+        else if (cmd == 2) {
+            // Login
             string uname = readLine("Username: ");
             auto it = users.find(uname);
             if (it == users.end()) { cout << "No such user. Register first.\n"; continue; }
             current = &(it->second);
             cout << "Logged in as " << current->getUsername() << "\n";
-        } else if (cmd == 3) {
+        } 
+        else if (cmd == 3) {
+            // Logout
             if (!current) cout << "Not logged in\n";
             else { cout << "Logged out " << current->getUsername() << "\n"; current = nullptr; }
-        } else if (cmd == 4) {
+        } 
+        else if (cmd == 4) {
+            // Create a channel
             if (!current) { cout << "Login required\n"; continue; }
             string cname = readLine("Channel name: ");
             if (cname.empty()) { cout << "Empty name\n"; continue; }
@@ -378,94 +474,189 @@ int main() {
             string desc = readLine("Description: ");
             channels.emplace(cname, Channel(cname, current->getUsername(), desc));
             cout << "Channel \"" << cname << "\" created\n";
-        } else if (cmd == 5) {
+        } 
+        else if (cmd == 5) {
+            // Upload a video
             if (!current) { cout << "Login required\n"; continue; }
             string cname = readLine("Your channel name: ");
             auto cit = channels.find(cname);
             if (cit == channels.end()) { cout << "Channel not found\n"; continue; }
-            if (cit->second.getOwner() != current->getUsername()) { cout << "You do not own this channel\n"; continue; }
+            if (cit->second.getOwner() != current->getUsername()) { 
+                cout << "You do not own this channel\n"; continue; 
+            }
             string title = readLine("Video title: ");
             int dur = readInt("Duration seconds: ");
-            auto v = cit->second.upload(title, dur);
+            Video* v = cit->second.upload(title, dur);
             videos[v->getId()] = v;
-        } else if (cmd == 6) {
+        } 
+        else if (cmd == 6) {
+            // Subscribe to a channel
             if (!current) { cout << "Login required\n"; continue; }
             string cname = readLine("Channel name to subscribe: ");
             auto cit = channels.find(cname);
             if (cit == channels.end()) { cout << "Channel not found\n"; continue; }
-            current->subscribeChannel(cit->second);
-        } else if (cmd == 7) {
-            long long vid = readInt("Video id to watch: ");
+            auto result = current->subscribeChannel(cit->second);
+            cout << result.message << "\n";
+        } 
+        else if (cmd == 7) {
+            // Watch a video
+            long long vid = readLongLong("Video id to watch: ");
             auto vit = videos.find(vid);
             if (vit == videos.end()) { cout << "Video not found\n"; continue; }
-            if (current) current->watch(vit->second);
-            else vit->second->play();
-        } else if (cmd == 8) {
+            
+            OpResult result = current ? current->watch(vit->second) : vit->second->play();
+            cout << result.message << "\n";
+        } 
+        else if (cmd == 8) {
+            // Add a comment
             if (!current) { cout << "Login required\n"; continue; }
-            long long vid = readInt("Video id to comment on: ");
+            long long vid = readLongLong("Video id to comment on: ");
             auto vit = videos.find(vid);
             if (vit == videos.end()) { cout << "Video not found\n"; continue; }
             string text = readLine("Comment text: ");
-            current->addComment(vit->second, text);
-        } else if (cmd == 9) {
+            auto result = current->addComment(vit->second, text);
+            cout << result.message << "\n";
+        } 
+        else if (cmd == 9) {
+            // Like a comment
             if (!current) { cout << "Login required\n"; continue; }
-            long long vid = readInt("Video id: ");
+            long long vid = readLongLong("Video id: ");
             auto vit = videos.find(vid);
             if (vit == videos.end()) { cout << "Video not found\n"; continue; }
-            long long cid = readInt("Comment id to like: ");
-            current->likeComment(vit->second, cid);
-        } else if (cmd == 10) {
-            long long vid = readInt("Video id to list comments: ");
+            long long cid = readLongLong("Comment id to like: ");
+            auto result = current->likeComment(vit->second, cid);
+            cout << result.message << "\n";
+        } 
+        else if (cmd == 10) {
+            // List comments on a video
+            long long vid = readLongLong("Video id to list comments: ");
             auto vit = videos.find(vid);
             if (vit == videos.end()) { cout << "Video not found\n"; continue; }
             vit->second->listComments();
-        } else if (cmd == 11) {
+        } 
+        else if (cmd == 11) {
+            // Search videos by title
+            PerfTimer timer("Search operation", PERF_LOGGING);
+            
             string q = readLine("Search keyword: ");
             cout << "Results:\n";
             string low = q;
             transform(low.begin(), low.end(), low.begin(), ::tolower);
+            
             for (auto &p : videos) {
                 string t = p.second->getTitle();
                 string tl = t;
                 transform(tl.begin(), tl.end(), tl.begin(), ::tolower);
                 if (tl.find(low) != string::npos) {
-                    cout << "  [" << p.first << "] " << t << " (channel: " << p.second->getUploader() << ")\n";
+                    cout << "  [" << p.first << "] " << t 
+                         << " (channel: " << p.second->getUploader() << ")\n";
                 }
             }
-        } else if (cmd == 12) {
+        } 
+        else if (cmd == 12) {
+            // Create a playlist
             if (!current) { cout << "Login required\n"; continue; }
             string pname = readLine("Playlist name: ");
-            current->createPlaylist(pname);
-        } else if (cmd == 13) {
+            auto result = current->createPlaylist(pname);
+            cout << result.message << "\n";
+        } 
+        else if (cmd == 13) {
+            // Add video to playlist
             if (!current) { cout << "Login required\n"; continue; }
             string pname = readLine("Playlist name: ");
             Playlist* p = current->getPlaylist(pname);
             if (!p) { cout << "Playlist not found\n"; continue; }
-            long long vid = readInt("Video id to add: ");
+            long long vid = readLongLong("Video id to add: ");
             auto vit = videos.find(vid);
             if (vit == videos.end()) { cout << "Video not found\n"; continue; }
-            p->add(vit->second);
-        } else if (cmd == 14) {
+            p->add(vid, vit->second->getTitle());
+        } 
+        else if (cmd == 14) {
+            // Play a playlist
             if (!current) { cout << "Login required\n"; continue; }
             string pname = readLine("Playlist name: ");
             Playlist* p = current->getPlaylist(pname);
             if (!p) { cout << "Playlist not found\n"; continue; }
-            p->show();
-            p->playAll();
-        } else if (cmd == 15) {
+            
+            PerfTimer timer("Playlist playback", PERF_LOGGING);
+            p->show(videos);
+            
+            cout << "Playing playlist \"" << pname << "\"\n";
+            for (long long vid : p->getVideoIds()) {
+                auto it = videos.find(vid);
+                if (it != videos.end()) {
+                    it->second->play();
+                    it->second->pause();
+                }
+            }
+        } 
+        else if (cmd == 15) {
+            // List all videos
+            PerfTimer timer("List all videos", PERF_LOGGING);
+            
             cout << "All videos:\n";
             for (auto &p : videos) {
-                cout << "  [" << p.first << "] " << p.second->getTitle() << " (channel: " << p.second->getUploader() << ", views: " << p.second->getViews() << ")\n";
+                cout << "  [" << p.first << "] " << p.second->getTitle() 
+                     << " (channel: " << p.second->getUploader() 
+                     << ", views: " << p.second->getViews() << ")\n";
             }
-        } else if (cmd == 16) {
+        } 
+        else if (cmd == 16) {
+            // List channel uploads
             string cname = readLine("Channel name: ");
             auto cit = channels.find(cname);
             if (cit == channels.end()) { cout << "Channel not found\n"; continue; }
             cit->second.listUploads();
-        } else if (cmd == 99) {
+        } 
+        else if (cmd == 17) {
+            // Toggle performance logging
+            PERF_LOGGING = !PERF_LOGGING;
+            cout << "Performance logging " << (PERF_LOGGING ? "ENABLED" : "DISABLED") << "\n";
+        } 
+        else if (cmd == 18) {
+            // Run performance benchmark
+            cout << "\n=== PERFORMANCE BENCHMARK ===\n";
+            PERF_LOGGING = true;
+            
+            // Test 1: Video lookup speed
+            {
+                PerfTimer t("1000 video lookups");
+                for (int i = 0; i < 1000; ++i) {
+                    volatile auto it = videos.find(1);
+                    (void)it;  // Prevent compiler optimization
+                }
+            }
+            
+            // Test 2: Comment addition speed
+            if (!videos.empty()) {
+                Video* testVid = videos.begin()->second;
+                PerfTimer t("100 comment additions");
+                for (int i = 0; i < 100; ++i) {
+                    testVid->addComment("benchuser", "test comment");
+                }
+            }
+            
+            // Test 3: Search performance
+            {
+                PerfTimer t("Video search");
+                string query = "c++";
+                transform(query.begin(), query.end(), query.begin(), ::tolower);
+                int count = 0;
+                for (auto &p : videos) {
+                    string title = p.second->getTitle();
+                    transform(title.begin(), title.end(), title.begin(), ::tolower);
+                    if (title.find(query) != string::npos) count++;
+                }
+            }
+            
+            PERF_LOGGING = false;
+            cout << "=== BENCHMARK COMPLETE ===\n\n";
+        } 
+        else if (cmd == 99) {
             cout << "Goodbye\n";
             break;
-        } else {
+        } 
+        else {
             cout << "Unknown command\n";
         }
     }
