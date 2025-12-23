@@ -6,6 +6,33 @@ The system models the core pieces of a video platform—users, channels, videos,
 
 ---
 
+## Project Structure
+
+The codebase is organized into modular files for better maintainability:
+
+- **video.h / video.cpp** - Core video system classes (Video, Channel, Comment, Playlist) and utilities (Logger, PerfTimer, IdGen)
+- **user.h / user.cpp** - User class handling subscriptions, playlists, and interactions
+- **main.cpp** - Main program with menu system and command loop
+
+### Compilation
+
+To compile the project:
+```bash
+g++ -std=c++17 -o mytube video.cpp user.cpp main.cpp
+```
+
+To run:
+```bash
+./mytube
+```
+
+Or with test input:
+```bash
+type test_input.txt | ./mytube
+```
+
+---
+
 ## What the Project Does
 
 The application allows users to:
