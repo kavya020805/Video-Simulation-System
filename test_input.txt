@@ -1,0 +1,109 @@
+17
+
+1
+benchuser
+2
+benchuser
+
+7
+1
+7
+1
+7
+2
+7
+3
+7
+1
+7
+2
+7
+3
+
+8
+1
+Nice explanation
+8
+1
+Very helpful
+8
+1
+Clear examples
+8
+1
+Well structured
+8
+1
+Good pacing
+8
+1
+Loved the STL part
+8
+1
+Could add more edge cases
+8
+1
+Great visuals
+8
+1
+Nice breakdown
+8
+1
+Solid overview
+
+9
+1
+1
+9
+1
+2
+9
+1
+3
+9
+1
+4
+9
+1
+5
+
+10
+1
+
+12
+heavylist
+
+13
+heavylist
+1
+13
+heavylist
+2
+13
+heavylist
+3
+13
+heavylist
+1
+13
+heavylist
+2
+13
+heavylist
+3
+
+14
+heavylist
+
+11
+c++
+11
+data
+11
+loops
+
+15
+
+18
+
+99

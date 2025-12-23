@@ -1,0 +1,279 @@
+[INFO] Uploaded "C++ OOP Deep Dive" (id=1) to channel KavyaTech
+[INFO] Uploaded "Data Structures Overview" (id=2) to channel KavyaTech
+[INFO] Uploaded "Chill Loops" (id=3) to channel IndieMusic
+
+--- MyTube (Improved) ---
+0  Show menu
+1  Register
+2  Login
+3  Logout
+4  Create channel (must be logged in)
+5  Upload video to your channel (logged in)
+6  Subscribe to channel (logged in)
+7  Watch video by id
+8  Add comment to video (logged in)
+9  Like comment on video (logged in)
+10 List comments on video
+11 Search videos by title
+12 Create playlist (logged in)
+13 Add video to playlist (logged in)
+14 Play playlist (logged in)
+15 List all videos
+16 List channel uploads
+17 Toggle performance logging
+18 Run performance benchmark
+99 Exit
+
+Action> Performance logging ENABLED
+
+Action>
+Action> Choose username: Registered user: benchuser
+
+Action> Username: Logged in as benchuser
+
+Action>
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Playing "C++ OOP Deep Dive" (views: 1)
+
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Already playing "C++ OOP Deep Dive"
+
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Playing "Data Structures Overview" (views: 1)
+
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Playing "Chill Loops" (views: 1)
+
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Already playing "C++ OOP Deep Dive"
+
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Already playing "Data Structures Overview"
+
+Action> Video id to watch: [PERF] Video::play: 0 ╬╝s
+Already playing "Chill Loops"
+
+Action>
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 1021 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action> Video id to comment on: Comment text: [PERF] Video::addComment: 0 ╬╝s
+Comment added by benchuser
+
+Action>
+Action> Video id: Comment id to like: [PERF] Video::likeComment: 0 ╬╝s
+Comment not found
+
+Action> Video id: Comment id to like: [PERF] Video::likeComment: 0 ╬╝s
+Comment not found
+
+Action> Video id: Comment id to like: [PERF] Video::likeComment: 0 ╬╝s
+Comment not found
+
+Action> Video id: Comment id to like: [PERF] Video::likeComment: 0 ╬╝s
+Liked comment 4 (likes=1)
+
+Action> Video id: Comment id to like: [PERF] Video::likeComment: 0 ╬╝s
+Liked comment 5 (likes=1)
+
+Action>
+Action> Video id to list comments: Comments for "C++ OOP Deep Dive":
+  [4] benchuser (1 likes): Nice explanation
+  [5] benchuser (1 likes): Very helpful
+  [6] benchuser (0 likes): Clear examples
+  [7] benchuser (0 likes): Well structured
+  [8] benchuser (0 likes): Good pacing
+  [9] benchuser (0 likes): Loved the STL part
+  [10] benchuser (0 likes): Could add more edge cases
+  [11] benchuser (0 likes): Great visuals
+  [12] benchuser (0 likes): Nice breakdown
+  [13] benchuser (0 likes): Solid overview
+
+Action>
+Action> Playlist name: Created playlist "heavylist"
+
+Action>
+Action> Playlist name: Video id to add: [INFO] Added "C++ OOP Deep Dive" to playlist "heavylist"     
+
+Action> Playlist name: Video id to add: [INFO] Added "Data Structures Overview" to playlist "heavylist"
+
+Action> Playlist name: Video id to add: [INFO] Added "Chill Loops" to playlist "heavylist"
+
+Action> Playlist name: Video id to add: [INFO] Added "C++ OOP Deep Dive" to playlist "heavylist"     
+
+Action> Playlist name: Video id to add: [INFO] Added "Data Structures Overview" to playlist "heavylist"
+
+Action> Playlist name: Video id to add: [INFO] Added "Chill Loops" to playlist "heavylist"
+
+Action>
+Action> Playlist name: Playlist: heavylist
+  [1] C++ OOP Deep Dive (id=1)
+  [2] Data Structures Overview (id=2)
+  [3] Chill Loops (id=3)
+  [4] C++ OOP Deep Dive (id=1)
+  [5] Data Structures Overview (id=2)
+  [6] Chill Loops (id=3)
+Playing playlist "heavylist"
+[PERF] Video::play: 0 ╬╝s
+[PERF] Video::play: 0 ╬╝s
+[PERF] Video::play: 0 ╬╝s
+[PERF] Video::play: 0 ╬╝s
+[PERF] Video::play: 0 ╬╝s
+[PERF] Video::play: 0 ╬╝s
+[PERF] Playlist playback: 0 ╬╝s
+
+Action>
+Action> Search keyword: Results:
+  [1] C++ OOP Deep Dive (channel: KavyaTech)
+[PERF] Search operation: 525 ╬╝s
+
+Action> Search keyword: Results:
+  [2] Data Structures Overview (channel: KavyaTech)
+[PERF] Search operation: 510 ╬╝s
+
+Action> Search keyword: Results:
+  [3] Chill Loops (channel: IndieMusic)
+[PERF] Search operation: 1008 ╬╝s
+
+Action>
+Action> All videos:
+  [3] Chill Loops (channel: IndieMusic, views: 2)
+  [2] Data Structures Overview (channel: KavyaTech, views: 2)
+  [1] C++ OOP Deep Dive (channel: KavyaTech, views: 2)
+[PERF] List all videos: 0 ╬╝s
+
+Action>
+Action>
+=== PERFORMANCE BENCHMARK ===
+[PERF] 1000 video lookups: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] Video::addComment: 0 ╬╝s
+[PERF] 100 comment additions: 5316 ╬╝s
+[PERF] Video search: 0 ╬╝s
+=== BENCHMARK COMPLETE ===
+
+
+Action>
+Action> Goodbye
